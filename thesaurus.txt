@@ -1,0 +1,3 @@
+document,doc,file,paper
+content,information,data,text
+search,find,look for,seek
