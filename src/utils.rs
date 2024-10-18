@@ -50,7 +50,9 @@ pub fn display_results(
             .or_insert_with(std::collections::HashSet::new)
             .insert(snippet.clone());
 
-        snippet_map.insert(counter, (doc_id, snippet.clone()));
+        if !snippet_map.contains_key(&counter) {
+            snippet_map.insert(counter, (doc_id, snippet.clone()));
+        }
         counter += 1;
     }
 
