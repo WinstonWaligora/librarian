@@ -24,8 +24,10 @@ fn main() -> io::Result<()> {
     io::stdin().read_line(&mut query).unwrap();
     let query = query.trim();
 
+    let binding = vec![];
     let results = search_with_synonyms(&index, query, &thesaurus);
-    let snippet_map = display_results(&library, results);
+    let synonyms = thesaurus.get(query).unwrap_or(&binding);
+    let snippet_map = display_results(&library, results, query, synonyms);
 
     print!("Enter the number of the document you want to view in full: ");
     io::stdout().flush().unwrap();
@@ -34,12 +36,7 @@ fn main() -> io::Result<()> {
     let selection: usize = selection.trim().parse().expect("Invalid input");
 
     if let Some((doc_id, _)) = snippet_map.get(&selection) {
-        display_full_document(
-            &library,
-            *doc_id,
-            query,
-            &thesaurus.get(query).unwrap_or(&vec![]),
-        );
+        display_full_document(&library, *doc_id, query, &synonyms);
     } else {
         println!("Invalid selection.");
     }

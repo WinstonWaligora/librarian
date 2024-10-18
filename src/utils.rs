@@ -28,21 +28,34 @@ pub fn display_full_document(library: &Library, doc_id: usize, query: &str, syno
     );
 }
 
-pub fn display_results(library: &Library, results: Vec<(usize, usize)>) -> HashMap<usize, (usize, Vec<String>)> {
+pub fn display_results(
+    library: &Library,
+    results: Vec<(usize, usize)>,
+    query: &str,
+    synonyms: &[String],
+) -> HashMap<usize, (usize, Vec<String>)> {
     let mut document_map: HashMap<usize, (usize, Vec<String>)> = HashMap::new();
     let mut doc_id_map: HashMap<usize, usize> = HashMap::new(); // Maps doc_id to counter
     let mut counter = 1;
+    let terms_to_highlight: Vec<String> = std::iter::once(query.to_string())
+        .chain(synonyms.iter().cloned())
+        .collect();
 
     // Build the document map and snippets
     for (doc_id, pos) in &results {
         let doc = &library.documents[*doc_id];
         let snippet = extract_snippet(&doc.content, &[*pos], 3);
+        let highlighted_snippet = highlight_term(&snippet, &terms_to_highlight);
 
-        if let Some(&num) = doc_id_map.get(doc_id) {
-            document_map.get_mut(&num).unwrap().1.push(snippet.clone());
+        if let Some(&num) = doc_id_map.get(&doc_id) {
+            document_map
+                .get_mut(&num)
+                .unwrap()
+                .1
+                .push(highlighted_snippet.clone());
         } else {
             doc_id_map.insert(*doc_id, counter);
-            document_map.insert(counter, (*doc_id, vec![snippet.clone()]));
+            document_map.insert(counter, (*doc_id, vec![highlighted_snippet.clone()]));
             counter += 1;
         }
     }
@@ -84,6 +97,19 @@ pub fn extract_snippet(doc: &str, positions: &[usize], context_size: usize) -> S
         })
         .collect::<Vec<String>>()
         .join(" ... ")
+}
+
+fn highlight_term(content: &str, terms: &[String]) -> String {
+    let mut highlighted_content = content.to_string();
+    for term in terms {
+        let re = Regex::new(&format!(r"(?i)\b{}\b", regex::escape(term))).unwrap();
+        highlighted_content = re
+            .replace_all(&highlighted_content, |caps: &regex::Captures| {
+                format!("\x1b[31m{}\x1b[0m", &caps[0])
+            })
+            .to_string();
+    }
+    highlighted_content
 }
 
 pub fn tokenize(text: &str) -> Vec<String> {
