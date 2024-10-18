@@ -1,12 +1,13 @@
+use std::collections::HashMap;
 use std::io::{self, Write};
 
+mod base;
 mod library;
-mod proto;
 mod search;
 mod utils;
 
+use base::{Document, Library};
 use library::{load_library, save_library};
-use proto::{Document, Library};
 use search::{create_inverted_index, load_thesaurus, search_with_synonyms};
 use utils::{display_full_document, display_results};
 
@@ -15,8 +16,8 @@ fn main() -> io::Result<()> {
     save_library(&library);
     library = load_library();
 
-    let thesaurus = load_thesaurus()?;
-    let index = create_inverted_index(&library);
+    let thesaurus = search::load_thesaurus()?; // Load thesaurus from binary file
+    let index = search::create_inverted_index(&library);
 
     print!("Enter your search query: ");
     io::stdout().flush().unwrap();
@@ -25,9 +26,9 @@ fn main() -> io::Result<()> {
     let query = query.trim();
 
     let binding = vec![];
-    let results = search_with_synonyms(&index, query, &thesaurus);
+    let results = search::search_with_synonyms(&index, query, &thesaurus);
     let synonyms = thesaurus.get(query).unwrap_or(&binding);
-    let snippet_map = display_results(&library, results, query, synonyms);
+    let snippet_map = utils::display_results(&library, results, query, synonyms);
 
     print!("Enter the number of the document you want to view in full: ");
     io::stdout().flush().unwrap();
@@ -36,7 +37,7 @@ fn main() -> io::Result<()> {
     let selection: usize = selection.trim().parse().expect("Invalid input");
 
     if let Some((doc_id, _)) = snippet_map.get(&selection) {
-        display_full_document(&library, *doc_id, query, &synonyms);
+        utils::display_full_document(&library, *doc_id, query, &synonyms);
     } else {
         println!("Invalid selection.");
     }

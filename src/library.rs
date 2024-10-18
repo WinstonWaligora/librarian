@@ -2,7 +2,7 @@ use protobuf::Message;
 use std::io::Read;
 use std::io::Write;
 
-use crate::proto::Library;
+use crate::base::Library;
 
 const LIBRARY_BIN: &str = "library.bin";
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use regex::Regex;
 
-use crate::proto::Library;
+use crate::base::Library;
 
 pub fn display_full_document(library: &Library, doc_id: usize, query: &str, synonyms: &[String]) {
     let doc = &library.documents[doc_id];
@@ -124,7 +124,7 @@ fn highlight_term(content: &str, terms: &[String]) -> String {
 
 pub fn tokenize(text: &str) -> Vec<String> {
     let stop_words = vec!["and", "the", "is", "in", "at", "of"];
-    let punctuations: &[char] = &['.', ',', ';', ':', '!', '?'];
+    let punctuations: &[char] = &['.', ',', ';', ':', '!', '?', '\''];
 
     text.split_whitespace()
         .flat_map(|word| word.split(punctuations))

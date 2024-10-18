@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+message Document {
+    string name = 1;
+    string subject = 2;
+    string content = 3;
+}
+
+message Library {
+    repeated Document documents = 1;
+	repeated Synonym thesaurus = 2;
+}
+
+message Synonym {
+	string root = 1;
+	repeated string synonyms = 2;
+}
+

@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufReader};
 
+use protobuf::Message;
 use rayon::prelude::*;
 
-use crate::proto::Library;
+use crate::base::{Library, Synonym};
 use crate::utils::tokenize;
 
-const THESAURUS_FILE: &str = "thesaurus.txt";
+const THESAURUS_FILE: &str = "thesaurus.bin";
 
 pub fn create_inverted_index(library: &Library) -> HashMap<String, Vec<(usize, usize)>> {
     let mut index = HashMap::new();
@@ -23,7 +24,7 @@ pub fn create_inverted_index(library: &Library) -> HashMap<String, Vec<(usize, u
     index
 }
 
-pub fn fetch_synonyms(word: &str, thesaurus: &HashMap<String, Vec<String>>) -> Vec<String> {
+fn fetch_synonyms(word: &str, thesaurus: &HashMap<String, Vec<String>>) -> Vec<String> {
     thesaurus
         .get(word)
         .cloned()
@@ -33,17 +34,23 @@ pub fn fetch_synonyms(word: &str, thesaurus: &HashMap<String, Vec<String>>) -> V
 pub fn load_thesaurus() -> io::Result<HashMap<String, Vec<String>>> {
     let mut thesaurus = HashMap::new();
     let file = File::open(THESAURUS_FILE)?;
-    for line in io::BufReader::new(file).lines() {
-        let line = line?;
-        let mut parts = line.split(',');
-        if let Some(word) = parts.next() {
-            thesaurus.insert(word.to_string(), parts.map(|s| s.to_string()).collect());
-        }
+    let mut reader = BufReader::new(file);
+
+    let library: crate::base::Library = protobuf::parse_from_reader(&mut reader)?;
+    for synonym in library.get_thesaurus() {
+        let root = synonym.get_root().to_string();
+        let synonyms: Vec<String> = synonym
+            .get_synonyms()
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        thesaurus.insert(root, synonyms);
     }
+
     Ok(thesaurus)
 }
 
-pub fn parallel_search(
+fn parallel_search(
     index: &HashMap<String, Vec<(usize, usize)>>,
     query: &str,
 ) -> Vec<(usize, usize)> {
@@ -77,7 +84,7 @@ pub fn search_with_synonyms(
     results
 }
 
-pub fn search(index: &HashMap<String, Vec<(usize, usize)>>, query: &str) -> Vec<(usize, usize)> {
+fn search(index: &HashMap<String, Vec<(usize, usize)>>, query: &str) -> Vec<(usize, usize)> {
     static EMPTY_VEC: Vec<(usize, usize)> = vec![];
     tokenize(query)
         .iter()
