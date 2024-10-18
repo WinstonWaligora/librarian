@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 use regex::Regex;
 
@@ -34,11 +33,12 @@ pub fn display_results(library: &Library, results: Vec<(usize, usize)>) -> HashM
     let mut doc_id_map: HashMap<usize, usize> = HashMap::new(); // Maps doc_id to counter
     let mut counter = 1;
 
+    // Build the document map and snippets
     for (doc_id, pos) in &results {
         let doc = &library.documents[*doc_id];
         let snippet = extract_snippet(&doc.content, &[*pos], 3);
 
-        if let Some(&num) = doc_id_map.get(&doc_id) {
+        if let Some(&num) = doc_id_map.get(doc_id) {
             document_map.get_mut(&num).unwrap().1.push(snippet.clone());
         } else {
             doc_id_map.insert(*doc_id, counter);
@@ -48,9 +48,13 @@ pub fn display_results(library: &Library, results: Vec<(usize, usize)>) -> HashM
     }
 
     let mut subjects_seen = HashMap::new();
-    counter = 1;
 
-    for (doc_id, pos) in &results {
+    // Collect documents for sorting
+    let mut sorted_documents: Vec<(&usize, &(usize, Vec<String>))> = document_map.iter().collect();
+    sorted_documents.sort_by_key(|&(num, _)| num);
+
+    // Display results in ascending order
+    for (num, (doc_id, snippets)) in sorted_documents {
         let doc = &library.documents[*doc_id];
         let subject = &doc.subject;
         let doc_name = &doc.name;
@@ -60,12 +64,9 @@ pub fn display_results(library: &Library, results: Vec<(usize, usize)>) -> HashM
             subjects_seen.insert(subject, true);
         }
 
-        if let Some(&num) = doc_id_map.get(&doc_id) {
-            println!("{}. Document: {}", num, doc_name);
-            let snippets = &document_map[&num].1;
-            for snippet in snippets {
-                println!("   - Snippet: {}", snippet);
-            }
+        println!("{}. Document: {}", num, doc_name);
+        for snippet in snippets {
+            println!("   - Snippet: {}", snippet);
         }
     }
 
