@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::collections::HashSet;
 
 use regex::Regex;
@@ -28,50 +29,43 @@ pub fn display_full_document(library: &Library, doc_id: usize, query: &str, syno
     );
 }
 
-pub fn display_results(
-    library: &Library,
-    results: Vec<(usize, usize)>,
-) -> std::collections::HashMap<usize, (usize, Vec<String>)> {
-    let mut grouped: std::collections::HashMap<
-        String,
-        std::collections::HashMap<String, Vec<String>>,
-    > = std::collections::HashMap::new();
-    let mut document_map = std::collections::HashMap::new();
+pub fn display_results(library: &Library, results: Vec<(usize, usize)>) -> HashMap<usize, (usize, Vec<String>)> {
+    let mut document_map: HashMap<usize, (usize, Vec<String>)> = HashMap::new();
+    let mut doc_id_map: HashMap<usize, usize> = HashMap::new(); // Maps doc_id to counter
     let mut counter = 1;
 
-    for (doc_id, pos) in results {
-        let doc = &library.documents[doc_id];
-        let snippet = extract_snippet(&doc.content, &[pos], 3);
+    for (doc_id, pos) in &results {
+        let doc = &library.documents[*doc_id];
+        let snippet = extract_snippet(&doc.content, &[*pos], 3);
 
-        grouped
-            .entry(doc.subject.clone())
-            .or_insert_with(std::collections::HashMap::new)
-            .entry(doc.name.clone())
-            .or_insert_with(Vec::new)
-            .push(snippet.clone());
-
-        if !document_map.contains_key(&counter) {
-            document_map.insert(counter, (doc_id, vec![snippet.clone()]));
-            counter += 1;
+        if let Some(&num) = doc_id_map.get(&doc_id) {
+            document_map.get_mut(&num).unwrap().1.push(snippet.clone());
         } else {
-            document_map
-                .get_mut(&counter)
-                .unwrap()
-                .1
-                .push(snippet.clone());
+            doc_id_map.insert(*doc_id, counter);
+            document_map.insert(counter, (*doc_id, vec![snippet.clone()]));
+            counter += 1;
         }
     }
 
+    let mut subjects_seen = HashMap::new();
     counter = 1;
 
-    for (subject, documents) in grouped {
-        println!("Subject: {}", subject);
-        for (doc_name, snippets) in documents {
-            println!("{}. Document: {}", counter, doc_name);
+    for (doc_id, pos) in &results {
+        let doc = &library.documents[*doc_id];
+        let subject = &doc.subject;
+        let doc_name = &doc.name;
+
+        if !subjects_seen.contains_key(subject) {
+            println!("Subject: {}", subject);
+            subjects_seen.insert(subject, true);
+        }
+
+        if let Some(&num) = doc_id_map.get(&doc_id) {
+            println!("{}. Document: {}", num, doc_name);
+            let snippets = &document_map[&num].1;
             for snippet in snippets {
                 println!("   - Snippet: {}", snippet);
             }
-            counter += 1;
         }
     }
 
