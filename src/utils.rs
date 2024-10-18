@@ -44,7 +44,7 @@ pub fn display_results(
     // Build the document map and snippets
     for (doc_id, pos) in &results {
         let doc = &library.documents[*doc_id];
-        let snippet = extract_snippet(&doc.content, &[*pos], 3);
+        let snippet = extract_snippet(&doc.content, &[*pos]);
         let highlighted_snippet = highlight_term(&snippet, &terms_to_highlight);
 
         if let Some(&num) = doc_id_map.get(&doc_id) {
@@ -86,17 +86,27 @@ pub fn display_results(
     document_map
 }
 
-pub fn extract_snippet(doc: &str, positions: &[usize], context_size: usize) -> String {
+fn extract_snippet(doc: &str, positions: &[usize]) -> String {
+    let punctuation = |c: char| ['.', '!', '?', ',', ';', ':'].contains(&c);
     let words: Vec<&str> = doc.split_whitespace().collect();
-    positions
-        .iter()
-        .map(|&pos| {
-            let start = pos.saturating_sub(context_size);
-            let end = (pos + context_size).min(words.len());
-            words[start..end].join(" ")
-        })
-        .collect::<Vec<String>>()
-        .join(" ... ")
+    let mut snippets = Vec::new();
+
+    for &pos in positions {
+        // Find the boundaries of the snippet
+        let start = words[..pos]
+            .iter()
+            .rposition(|&word| word.chars().any(punctuation))
+            .map_or(0, |i| i + 1);
+        let end = words[pos..]
+            .iter()
+            .position(|&word| word.chars().any(punctuation))
+            .map_or(words.len(), |i| pos + i + 1);
+
+        let snippet = &words[start..end];
+        snippets.push(snippet.join(" "));
+    }
+
+    snippets.join(" ... ")
 }
 
 fn highlight_term(content: &str, terms: &[String]) -> String {

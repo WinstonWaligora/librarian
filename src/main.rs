@@ -59,6 +59,7 @@ fn generate_demo_data() -> Library {
     let lotr_chapters = vec![
         ("Chapter 1", "When Mr. Bilbo Baggins of Bag End announced that he would shortly be celebrating his eleventy-first birthday."),
         ("Chapter 2", "The Fellowship of the Ring sets out on their journey to destroy the One Ring."),
+	("Chapter 4", "To show how these ring results are broken up, this is a Lord of the Ring's example to show a document with multiple sentences; However, I think some ring might cause an issue. Let's see."),
 	("Chapter 12", "Bilbo Baggins had to throw the ring into the lava pool at the top of the mountain resisting its temptation."),
     ];
     add_documents(&mut library, "Lord of the Rings", lotr_chapters);
