@@ -27,7 +27,7 @@ fn main() -> io::Result<()> {
     let results = search_with_synonyms(&index, query, &thesaurus);
     let snippet_map = display_results(&library, results);
 
-    print!("Enter the number of the snippet you want to view in full: ");
+    print!("Enter the number of the document you want to view in full: ");
     io::stdout().flush().unwrap();
     let mut selection = String::new();
     io::stdin().read_line(&mut selection).unwrap();

@@ -31,12 +31,12 @@ pub fn display_full_document(library: &Library, doc_id: usize, query: &str, syno
 pub fn display_results(
     library: &Library,
     results: Vec<(usize, usize)>,
-) -> std::collections::HashMap<usize, (usize, String)> {
+) -> std::collections::HashMap<usize, (usize, Vec<String>)> {
     let mut grouped: std::collections::HashMap<
         String,
-        std::collections::HashMap<String, std::collections::HashSet<String>>,
+        std::collections::HashMap<String, Vec<String>>,
     > = std::collections::HashMap::new();
-    let mut snippet_map = std::collections::HashMap::new();
+    let mut document_map = std::collections::HashMap::new();
     let mut counter = 1;
 
     for (doc_id, pos) in results {
@@ -47,13 +47,19 @@ pub fn display_results(
             .entry(doc.subject.clone())
             .or_insert_with(std::collections::HashMap::new)
             .entry(doc.name.clone())
-            .or_insert_with(std::collections::HashSet::new)
-            .insert(snippet.clone());
+            .or_insert_with(Vec::new)
+            .push(snippet.clone());
 
-        if !snippet_map.contains_key(&counter) {
-            snippet_map.insert(counter, (doc_id, snippet.clone()));
+        if !document_map.contains_key(&counter) {
+            document_map.insert(counter, (doc_id, vec![snippet.clone()]));
+            counter += 1;
+        } else {
+            document_map
+                .get_mut(&counter)
+                .unwrap()
+                .1
+                .push(snippet.clone());
         }
-        counter += 1;
     }
 
     counter = 1;
@@ -69,7 +75,7 @@ pub fn display_results(
         }
     }
 
-    snippet_map
+    document_map
 }
 
 pub fn extract_snippet(doc: &str, positions: &[usize], context_size: usize) -> String {
